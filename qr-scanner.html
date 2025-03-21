@@ -1,155 +1,76 @@
 <!DOCTYPE html>
-<script>
-  class QRScanner extends HTMLElement {
-    constructor() {
-      super();
-      const qrcodeScript = document.createElement("script");
-      qrcodeScript.src = "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js";
-      qrcodeScript.onload = this.initialize.bind(this);
-      document.head.appendChild(qrcodeScript);
-    }
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Scanner</title>
+    <script>
+        class QRScanner extends HTMLElement {
+            constructor() {
+                super();
+                const qrcodeScript = document.createElement("script");
+                qrcodeScript.src = "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js";
+                qrcodeScript.onload = this.initialize.bind(this);
+                document.head.appendChild(qrcodeScript);
+            }
 
-    initialize() {
-      this.innerHTML = `
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;500;800&display=swap');
-          #container {
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-          }
-          #reader2 {
-              background-color: #989AAD;    
-              min-width: 301px;
-              max-width: 301px;
-              min-height: 180px;
-              border-radius: 5px;
-              cursor: not-allowed;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-          }
+            initialize() {
+                this.innerHTML = `
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;500;800&display=swap');
+                        #container { display: flex; flex-direction: column; align-items: center; }
+                        #reader2 { background-color: #989AAD; min-width: 301px; max-width: 301px; min-height: 180px; border-radius: 5px; cursor: not-allowed; display: flex; justify-content: center; align-items: center; }
+                        #button-container { display: flex; justify-content: space-between; width: 100%; }
+                        #start-button, #stop-button { font-family: 'Inter', sans-serif; font-size: 14px; padding: 10px; height: 45px; border-radius: 5px; cursor: pointer; margin-top: 20px; }
+                        #start-button { background-color: #1476FF; color: white; }
+                        #stop-button { background-color: white; border: 1px solid #E5E5EA; color: black; }
+                        .icon { background-image: url('https://static.wixstatic.com/shapes/4dedd8_05db8955cb124711987bf42071de2000.svg'); background-size: contain; background-repeat: no-repeat; width: 50px; height: 50px; }
+                    </style>
+                    <div id="container">
+                        <div id="reader2" style="width: 320px; height: 180px;"><div class="icon"></div></div>
+                        <div id="button-container">
+                            <button id="stop-button">Abbrechen</button>
+                            <button id="start-button">Scanner starten</button>
+                        </div>
+                    </div>
+                `;
+                this.querySelector('#start-button').addEventListener('click', () => this.startScanner());
+                this.querySelector('#stop-button').addEventListener('click', () => this.stopScanner());
+                this.qrCodeSuccessCallback = this.qrCodeSuccessCallback.bind(this);
+                this.qrCodeErrorCallback = this.qrCodeErrorCallback.bind(this);
+            }
 
-          #button-container {
-              display: flex;
-              justify-content: space-between;
-              width: 100%;
-          }
-          #start-button {
-              background-color: #1476FF;
-              color: white;
-              font-size: 14px;
-              padding: 10px;
-              height: 45px;
-              border-radius: 5px;
-              color: white;
-              cursor: pointer;
-              font-family: 'Inter', sans-serif;
-              font-style: bold;
-              margin-right: 0px;
-              margin-top: 20px;
-          }
+            startScanner() {
+                this.html5Qrcode = new Html5Qrcode("reader2");
+                this.html5Qrcode.start(
+                    { facingMode: "environment" },
+                    { fps: 10, aspectRatio: 1.777779, qrbox: { width: 260, height: 100 }, experimentalFeatures: { useBarCodeDetectorIfSupported: true } },
+                    this.qrCodeSuccessCallback,
+                    this.qrCodeErrorCallback
+                );
+            }
 
-          #stop-button {
-              background-color: white;
-              color: white;
-              font-size: 14px;
-              padding: 10px;
-              height: 45px;
-              border: 1px solid;
-              border-color: #E5E5EA; 
-              border-radius: 5px;
-              color: black;
-              cursor: pointer;
-              font-family: 'Inter', sans-serif;
-              font-style: bold;
-              margin-left: 0px;
-              margin-top: 20px;
-          }
+            stopScanner() {
+                if (this.html5Qrcode) {
+                    this.html5Qrcode.stop().then(() => {
+                        this.html5Qrcode.clear();
+                        this.querySelector('#reader2').innerHTML = '<div class="icon"></div>';
+                    }).catch(error => console.error("Error stopping scanner:", error));
+                }
+                this.dispatchEvent(new CustomEvent('stoppedScanner'));
+            }
 
-          #stop-button:hover {
-              background-color: #F8F8FB;
-              color: white;
-              padding: 10px;
-              height: 45px;
-              border: 1px solid;
-              border-color: #000000; 
-              border-radius: 5px;
-              color: black;
-              cursor: pointer;
-              font-family: 'Inter', sans-serif;
-              font-style: bold;
-          }
+            qrCodeSuccessCallback(decodedText) {
+                this.dispatchEvent(new CustomEvent('extractedBarcode', { detail: decodedText }));
+                this.html5Qrcode.stop();
+            }
 
-          #start-button:hover {
-              background-color: #3D8DFD;
-              color: white;
-              padding: 10px;
-              border-radius: 5px;
-              color: white;
-              cursor: pointer;
-              font-family: 'Inter', sans-serif;
-              font-style: bold;
-          }
-
-          .icon {
-              background-image: url('https://static.wixstatic.com/shapes/4dedd8_05db8955cb124711987bf42071de2000.svg');
-              background-size: contain;
-              background-repeat: no-repeat;
-              width: 50px;
-              height: 50px;
-          }
-        </style>
-
-        <div id="container">
-          <div id="reader2" style="width: 320px; height: 180px;">
-            <div class="icon"></div>
-          </div>
-          <div id="button-container">
-            <button id="stop-button">Abbrechen</button>
-            <button id="start-button">Scanner starten</button>
-          </div>
-        </div>
-      `;
-
-      this.querySelector('#start-button').addEventListener('click', () => this.startScanner());
-      this.querySelector('#stop-button').addEventListener('click', () => this.stopScanner());
-      this.qrCodeSuccessCallback = this.qrCodeSuccessCallback.bind(this);
-      this.qrCodeErrorCallback = this.qrCodeErrorCallback.bind(this);
-    }
-
-    startScanner() {
-      this.html5Qrcode = new Html5Qrcode("reader2");
-      this.html5Qrcode.start(
-        { facingMode: "environment" },
-        { fps: 100, aspectRatio: 1.777779, qrbox: { width: 260, height: 100 }, experimentalFeatures: { useBarCodeDetectorIfSupported: true } },
-        this.qrCodeSuccessCallback,
-        this.qrCodeErrorCallback
-      );
-    }
-
-    stopScanner() {
-      if (this.html5Qrcode) {
-        this.html5Qrcode.stop().then(() => {
-          this.html5Qrcode.clear();
-          const reader = this.querySelector('#reader2');
-          reader.innerHTML = '<div class="icon"></div>';
-        }).catch(error => {
-          console.error("Error stopping the QR scanner: ", error);
-        });
-      }
-      this.dispatchEvent(new CustomEvent('stoppedScanner'));
-    }
-
-    qrCodeSuccessCallback(decodedText, decodedResult) {
-      this.dispatchEvent(new CustomEvent('extractedBarcode', { detail: `${decodedText}` }));
-      this.html5Qrcode.stop();
-    }
-
-    qrCodeErrorCallback(error) {
-      // Fout bij lezen, negeren of loggen als nodig
-    }
-  }
-
-  customElements.define("qr-scanner2", QRScanner);
-</script>
+            qrCodeErrorCallback(error) {}
+        }
+        customElements.define("qr-scanner2", QRScanner);
+    </script>
+</head>
+<body>
+    <qr-scanner2></qr-scanner2>
+</body>
+</html>
