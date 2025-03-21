@@ -29,8 +29,8 @@
                     <div id="container">
                         <div id="reader2" style="width: 320px; height: 180px;"><div class="icon"></div></div>
                         <div id="button-container">
-                            <button id="stop-button">Abbrechen</button>
-                            <button id="start-button">Scanner starten</button>
+                            <button id="start-button">Start Scan</button>
+                            <button id="stop-button">Stop Scan</button>
                         </div>
                     </div>
                 `;
@@ -60,13 +60,26 @@
                 this.dispatchEvent(new CustomEvent('stoppedScanner'));
             }
 
-            qrCodeSuccessCallback(decodedText) {
+            qrCodeSuccessCallback(decodedText, decodedResult) {
+                console.log("✅ Barcode gedetecteerd:", decodedText);  
+                alert("✅ Barcode gedetecteerd: " + decodedText);  
+                
+                // 📌 Eerst registreren
                 this.dispatchEvent(new CustomEvent('extractedBarcode', { detail: decodedText }));
-                this.html5Qrcode.stop();
+
+                // 📌 Dan stoppen (wacht 500ms zodat registratie goed verloopt)
+                setTimeout(() => {
+                    this.html5Qrcode.stop().then(() => {
+                        console.log("📸 Scanner succesvol gestopt.");
+                    }).catch(error => console.error("⚠️ Fout bij stoppen scanner:", error));
+                }, 500);
             }
 
-            qrCodeErrorCallback(error) {}
+            qrCodeErrorCallback(error) {
+                // Geen actie nodig, fouten kunnen worden genegeerd
+            }
         }
+
         customElements.define("qr-scanner2", QRScanner);
     </script>
 </head>
