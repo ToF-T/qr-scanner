@@ -81,4 +81,27 @@
                         
                         // 📌 "Scan Opnieuw" tonen
                         document.querySelector("#restart-button").style.display = "block";
-                    }).catch(error => console.error("⚠️ Fout bij stoppen scanner:",
+                    }).catch(error => console.error("⚠️ Fout bij stoppen scanner:", error));
+                }, 500);
+            }
+
+            restartScanner() {
+                console.log("🔄 Scanner opnieuw starten...");
+                
+                // 📌 Verberg de "Scan Opnieuw" knop en herstart de scanner
+                document.querySelector("#restart-button").style.display = "none";
+                this.startScanner();
+            }
+
+            qrCodeErrorCallback(error) {
+                // Geen actie nodig, fouten kunnen worden genegeerd
+            }
+        }
+
+        customElements.define("qr-scanner2", QRScanner);
+    </script>
+</head>
+<body>
+    <qr-scanner2></qr-scanner2>
+</body>
+</html>
